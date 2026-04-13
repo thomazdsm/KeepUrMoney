@@ -127,4 +127,30 @@ class RecurrenceRepository
             }
         }
     }
+
+    public function applyRecurrencesToCompetence(Competence $competence)
+    {
+        $recurrences = Recurrence::where('user_id', $competence->user_id)->where('is_active', true)->get();
+
+        foreach ($recurrences as $recurrence) {
+            $exists = Transaction::where('competence_id', $competence->id)
+                ->where('description', $recurrence->description)
+                ->where('is_fixed', true)
+                ->exists();
+
+            if (!$exists) {
+                $dueDate = Carbon::create($competence->year, $competence->month, 10);
+                Transaction::create([
+                    'competence_id' => $competence->id,
+                    'category_id' => $recurrence->category_id,
+                    'type' => $recurrence->type,
+                    'description' => $recurrence->description,
+                    'planned_amount' => $recurrence->base_amount,
+                    'due_date' => $dueDate,
+                    'status' => 'pending',
+                    'is_fixed' => true,
+                ]);
+            }
+        }
+    }
 }
